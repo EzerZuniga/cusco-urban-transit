@@ -1,41 +1,41 @@
-# Prerequisites
-*.d
 
-# Compiled Object files
-*.slo
-*.lo
-*.o
-*.obj
+# Build artifacts
+/build/
+/cmake-build-*/
 
-# Precompiled Headers
-*.gch
-*.pch
+# CMake generated files
+/CMakeFiles/
+/CMakeCache.txt
+/cmake_install.cmake
+/compile_commands.json
 
-# Linker files
-*.ilk
+# Binaries
+/bin/
+/lib/
 
-# Debugger Files
-*.pdb
+# Editor directories and files
+/.vscode/
+/.vscode/*
+/.idea/
 
-# Compiled Dynamic libraries
-*.so
-*.dylib
-*.dll
+# OS generated files
+Thumbs.db
+.DS_Store
 
-# Fortran module files
-*.mod
-*.smod
+# Logs
+*.log
 
-# Compiled Static libraries
-*.lai
-*.la
-*.a
-*.lib
+# Python envs
+venv/
+.env/
 
-# Executables
-*.exe
-*.out
-*.app
+# SQLite database (local development copy)
+/data/transport.db
 
-# debug information files
-*.dwo
+# Temporary files
+*.tmp
+*.swp
+*~
+
+# Tests output
+/build/test/

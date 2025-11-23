@@ -1,0 +1,166 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:  # Permite ejecutar manualmente
+
+jobs:
+  build-and-release:
+    name: Build and Release
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            artifact_name: urban-transport-system-linux
+            binary_name: urban-transport-system
+          - os: windows-latest
+            artifact_name: urban-transport-system-windows
+            binary_name: urban-transport-system.exe
+          - os: macos-latest
+            artifact_name: urban-transport-system-macos
+            binary_name: urban-transport-system
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Install dependencies (Linux)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cmake build-essential libsqlite3-dev
+
+    - name: Install dependencies (Windows)
+      if: matrix.os == 'windows-latest'
+      run: |
+        choco install cmake -y
+        choco install sqlite -y
+
+    - name: Install dependencies (macOS)
+      if: matrix.os == 'macos-latest'
+      run: |
+        brew update
+        brew install cmake sqlite3
+
+    - name: Configure CMake
+      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Release
+
+    - name: Build
+      run: cmake --build ${{github.workspace}}/build --config Release --parallel
+
+    - name: Run tests
+      run: |
+        cd ${{github.workspace}}/build
+        if [ -f "test_transport" ]; then
+          ./test_transport
+        elif [ -f "test_transport.exe" ]; then
+          ./test_transport.exe
+        fi
+
+    - name: Create release assets directory
+      run: |
+        mkdir -p release_assets
+        cp build/${{ matrix.binary_name }} release_assets/ || true
+        cp -r data release_assets/ || true
+        cp README.md release_assets/ || true
+        cp LICENSE release_assets/ || true
+
+    - name: Package Linux release
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        cd release_assets
+        tar -czf ${{ matrix.artifact_name }}.tar.gz .
+        cd ..
+
+    - name: Package Windows release
+      if: matrix.os == 'windows-latest'
+      run: |
+        cd release_assets
+        7z a ${{ matrix.artifact_name }}.zip . -r
+        cd ..
+
+    - name: Package macOS release
+      if: matrix.os == 'macos-latest'
+      run: |
+        cd release_assets
+        tar -czf ${{ matrix.artifact_name }}.tar.gz .
+        cd ..
+
+    - name: Upload build artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: ${{ matrix.artifact_name }}
+        path: release_assets/${{ matrix.artifact_name }}.*
+
+  create-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: build-and-release
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+    - name: Download all artifacts
+      uses: actions/download-artifact@v3
+      with:
+        path: artifacts
+
+    - name: List artifacts
+      run: ls -R artifacts/
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          artifacts/urban-transport-system-linux/*.tar.gz
+          artifacts/urban-transport-system-windows/*.zip
+          artifacts/urban-transport-system-macos/*.tar.gz
+        generate_release_notes: true
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  docker-build:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v4
+      with:
+        images: ${{ secrets.DOCKERHUB_USERNAME }}/urban-transport-system
+        tags: |
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        file: ./Dockerfile
+        push: ${{ github.event_name != 'pull_request' }}
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
