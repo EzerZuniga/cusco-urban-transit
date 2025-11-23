@@ -1,6 +1,3 @@
--- Datos iniciales de paradas de transporte
-
--- Paradas de autobús en el centro
 INSERT INTO stops (id, name, latitude, longitude) VALUES
 (1, 'Plaza Central', 40.7128, -74.0060),
 (2, 'Estación Norte', 40.7215, -74.0052),

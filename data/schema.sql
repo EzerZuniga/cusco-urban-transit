@@ -1,5 +1,3 @@
--- Esquema de la base de datos del Sistema de Transporte Urbano
-
 -- Tabla de paradas de transporte
 CREATE TABLE IF NOT EXISTS stops (
     id INTEGER PRIMARY KEY,

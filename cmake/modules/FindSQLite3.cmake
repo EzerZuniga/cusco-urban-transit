@@ -1,6 +1,3 @@
-# FindSQLite3.cmake - Find SQLite3 library
-# Adapted from CMake's standard FindSQLite3.cmake
-
 find_path(SQLite3_INCLUDE_DIR
     NAMES sqlite3.h
     PATHS

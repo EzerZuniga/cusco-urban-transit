@@ -1,6 +1,3 @@
--- Datos iniciales de rutas de transporte
-
--- Rutas de autobús
 INSERT INTO routes (id, name, transport_type) VALUES
 (1, 'Línea 1 - Centro', 'bus'),
 (2, 'Línea 2 - Norte-Sur', 'bus'),
@@ -19,14 +16,14 @@ INSERT INTO route_stops (route_id, stop_id, sequence) VALUES
 (1, 3, 2),  -- Mercado Municipal
 (1, 4, 3),  -- Hospital General
 (1, 8, 4),  -- Centro Comercial
-(1, 9, 5);  -- Estación Sur
+(1, 9, 5);  -- Estación 
 
 -- Paradas para Línea 2 - Norte-Sur (bus)
 INSERT INTO route_stops (route_id, stop_id, sequence) VALUES
 (2, 2, 1),  -- Estación Norte
 (2, 5, 2),  -- Universidad
 (2, 1, 3),  -- Plaza Central
-(2, 9, 4),  -- Estación Sur
+(2, 9, 4),  -- Estación 
 (2, 10, 5); -- Aeropuerto
 
 -- Paradas para Línea A - Roja (metro)
