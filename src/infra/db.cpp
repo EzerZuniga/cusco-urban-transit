@@ -16,8 +16,7 @@ public:
     }
     
     bool is_connected() const {
-        // Necesitaríamos agregar un método en SQLiteWrapper para verificar conexión
-        return true; // Simplificado por ahora
+        return sqlite_.is_open();
     }
     
     bool execute(const std::string& sql) {
@@ -30,14 +29,14 @@ public:
         return sqlite_.execute_with_params(sql, params);
     }
     
-    bool query(const std::string& sql, RowCallback callback) {
+    bool query(const std::string& sql, RowCallback callback) const {
         Logger::get_instance().debug("Consultando SQL: " + sql);
         return sqlite_.query(sql, callback);
     }
     
     bool query_with_params(const std::string& sql, 
                           const std::vector<std::string>& params,
-                          RowCallback callback) {
+                          RowCallback callback) const {
         Logger::get_instance().debug("Consultando SQL con parámetros: " + sql);
         return sqlite_.query_with_params(sql, params, callback);
     }
@@ -85,13 +84,13 @@ bool Database::execute_with_params(const std::string& sql, const std::vector<std
     return pimpl->execute_with_params(sql, params);
 }
 
-bool Database::query(const std::string& sql, RowCallback callback) {
+bool Database::query(const std::string& sql, RowCallback callback) const {
     return pimpl->query(sql, callback);
 }
 
 bool Database::query_with_params(const std::string& sql, 
                                 const std::vector<std::string>& params,
-                                RowCallback callback) {
+                                RowCallback callback) const {
     return pimpl->query_with_params(sql, params, callback);
 }
 

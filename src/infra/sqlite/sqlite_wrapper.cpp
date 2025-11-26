@@ -1,8 +1,11 @@
 #include "infra/sqlite_wrapper.h"
 #include "infra/logger.h"
-#include <iostream>
 
 using namespace urban_transport;
+
+static std::string safe_sqlite_errmsg(sqlite3* db) {
+    return db ? sqlite3_errmsg(db) : std::string("Database not open");
+}
 
 SQLiteWrapper::SQLiteWrapper() : db_(nullptr) {}
 
@@ -18,7 +21,7 @@ bool SQLiteWrapper::open(const std::string& filename) {
     
     int rc = sqlite3_open(filename.c_str(), &db_);
     if (rc != SQLITE_OK) {
-        Logger::get_instance().error("Error al abrir la base de datos: " + std::string(sqlite3_errmsg(db_)));
+        Logger::get_instance().error("Error al abrir la base de datos: " + safe_sqlite_errmsg(db_));
         cleanup();
         return false;
     }
@@ -48,8 +51,8 @@ bool SQLiteWrapper::execute(const std::string& sql) {
     int rc = sqlite3_exec(db_, sql.c_str(), nullptr, nullptr, &error_msg);
     
     if (rc != SQLITE_OK) {
-        Logger::get_instance().error("Error en execute: " + std::string(error_msg));
-        sqlite3_free(error_msg);
+        Logger::get_instance().error(std::string("Error en execute: ") + (error_msg ? error_msg : safe_sqlite_errmsg(db_).c_str()));
+        if (error_msg) sqlite3_free(error_msg);
         return false;
     }
     
@@ -65,7 +68,7 @@ bool SQLiteWrapper::execute_with_params(const std::string& sql, const std::vecto
     sqlite3_stmt* stmt;
     int rc = sqlite3_prepare_v2(db_, sql.c_str(), -1, &stmt, nullptr);
     if (rc != SQLITE_OK) {
-        Logger::get_instance().error("Error al preparar statement: " + std::string(sqlite3_errmsg(db_)));
+        Logger::get_instance().error("Error al preparar statement: " + safe_sqlite_errmsg(db_));
         return false;
     }
     
@@ -78,14 +81,14 @@ bool SQLiteWrapper::execute_with_params(const std::string& sql, const std::vecto
     bool success = (rc == SQLITE_DONE);
     
     if (!success) {
-        Logger::get_instance().error("Error en execute_with_params: " + std::string(sqlite3_errmsg(db_)));
+        Logger::get_instance().error("Error en execute_with_params: " + safe_sqlite_errmsg(db_));
     }
     
     sqlite3_finalize(stmt);
     return success;
 }
 
-bool SQLiteWrapper::query(const std::string& sql, RowCallback callback) {
+bool SQLiteWrapper::query(const std::string& sql, RowCallback callback) const {
     if (!db_) {
         Logger::get_instance().error("Base de datos no está abierta");
         return false;
@@ -94,7 +97,7 @@ bool SQLiteWrapper::query(const std::string& sql, RowCallback callback) {
     sqlite3_stmt* stmt;
     int rc = sqlite3_prepare_v2(db_, sql.c_str(), -1, &stmt, nullptr);
     if (rc != SQLITE_OK) {
-        Logger::get_instance().error("Error al preparar query: " + std::string(sqlite3_errmsg(db_)));
+        Logger::get_instance().error("Error al preparar query: " + safe_sqlite_errmsg(db_));
         return false;
     }
     
@@ -114,7 +117,7 @@ bool SQLiteWrapper::query(const std::string& sql, RowCallback callback) {
     }
     
     if (rc != SQLITE_DONE && rc != SQLITE_ROW) {
-        Logger::get_instance().error("Error durante query: " + std::string(sqlite3_errmsg(db_)));
+        Logger::get_instance().error("Error durante query: " + safe_sqlite_errmsg(db_));
         success = false;
     }
     
@@ -124,7 +127,7 @@ bool SQLiteWrapper::query(const std::string& sql, RowCallback callback) {
 
 bool SQLiteWrapper::query_with_params(const std::string& sql, 
                                      const std::vector<std::string>& params,
-                                     RowCallback callback) {
+                                     RowCallback callback) const {
     if (!db_) {
         Logger::get_instance().error("Base de datos no está abierta");
         return false;
@@ -133,7 +136,7 @@ bool SQLiteWrapper::query_with_params(const std::string& sql,
     sqlite3_stmt* stmt;
     int rc = sqlite3_prepare_v2(db_, sql.c_str(), -1, &stmt, nullptr);
     if (rc != SQLITE_OK) {
-        Logger::get_instance().error("Error al preparar query con parámetros: " + std::string(sqlite3_errmsg(db_)));
+        Logger::get_instance().error("Error al preparar query con parámetros: " + safe_sqlite_errmsg(db_));
         return false;
     }
     
@@ -158,7 +161,7 @@ bool SQLiteWrapper::query_with_params(const std::string& sql,
     }
     
     if (rc != SQLITE_DONE && rc != SQLITE_ROW) {
-        Logger::get_instance().error("Error durante query con parámetros: " + std::string(sqlite3_errmsg(db_)));
+        Logger::get_instance().error("Error durante query con parámetros: " + safe_sqlite_errmsg(db_));
         success = false;
     }
     
@@ -179,7 +182,7 @@ bool SQLiteWrapper::rollback_transaction() {
 }
 
 std::string SQLiteWrapper::last_error() const {
-    return db_ ? sqlite3_errmsg(db_) : "Database not open";
+    return safe_sqlite_errmsg(db_);
 }
 
 int SQLiteWrapper::last_error_code() const {

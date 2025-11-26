@@ -24,10 +24,10 @@ public:
                            const std::vector<std::string>& params);
     
     using RowCallback = std::function<bool(const std::vector<std::string>&)>;
-    bool query(const std::string& sql, RowCallback callback);
+    bool query(const std::string& sql, RowCallback callback) const;
     bool query_with_params(const std::string& sql, 
                          const std::vector<std::string>& params,
-                         RowCallback callback);
+                         RowCallback callback) const;
     
     // Transacciones
     bool begin_transaction();

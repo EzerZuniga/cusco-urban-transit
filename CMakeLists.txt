@@ -36,6 +36,7 @@ set(SOURCES
     src/infra/sqlite/sqlite_wrapper.cpp
     src/infra/sqlite/connection_pool.cpp
     src/infra/logging/logger.cpp
+    src/core/graph.cpp
 )
 
 # Ejecutable principal
@@ -56,6 +57,7 @@ add_executable(test_transport
     src/infra/db.cpp
     src/infra/sqlite/sqlite_wrapper.cpp
     src/infra/logging/logger.cpp
+    src/core/graph.cpp
 )
 target_link_libraries(test_transport GTest::gtest GTest::gtest_main ${SQLite3_LIBRARIES})
 target_include_directories(test_transport PRIVATE ${SQLite3_INCLUDE_DIRS})

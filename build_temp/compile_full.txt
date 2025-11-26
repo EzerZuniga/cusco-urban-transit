@@ -1,0 +1,43 @@
+﻿g++.exe : Using built-in specs.
+En línea: 1 Carácter: 1
++ & 'C:\msys64\mingw64\bin\g++.exe' -v -std=c++17 -I'C:/Users/jose/Desk ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Using built-in specs.:String) [], Re 
+   moteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+COLLECT_GCC=C:\msys64\mingw64\bin\g++.exe
+Target: x86_64-w64-mingw32
+Configured with: ../gcc-15.2.0/configure --prefix=/mingw64 
+--with-local-prefix=/mingw64/local 
+--with-native-system-header-dir=/mingw64/include --libexecdir=/mingw64/lib 
+--enable-bootstrap --enable-checking=release --with-arch=nocona 
+--with-tune=generic --enable-mingw-wildcard 
+--enable-languages=c,lto,c++,fortran,ada,objc,obj-c++,jit --enable-shared 
+--enable-static --enable-libatomic --enable-threads=posix --enable-graphite 
+--enable-fully-dynamic-string --enable-libstdcxx-backtrace=yes 
+--enable-libstdcxx-filesystem-ts --enable-libstdcxx-time --disable-libstdcxx-pch 
+--enable-lto --enable-libgomp --disable-libssp --disable-multilib --disable-rpath 
+--disable-win32-registry --disable-nls --disable-werror --disable-symvers 
+--with-libiconv --with-system-zlib --with-gmp=/mingw64 --with-mpfr=/mingw64 
+--with-mpc=/mingw64 --with-isl=/mingw64 --with-pkgversion='Rev8, Built by MSYS2 
+project' --with-bugurl=https://github.com/msys2/MINGW-packages/issues 
+--with-gnu-as --with-gnu-ld --with-libstdcxx-zoneinfo=yes 
+--disable-libstdcxx-debug --enable-plugin --with-boot-ldflags=-static-libstdc++ 
+--with-stage1-ldflags=-static-libstdc++
+Thread model: posix
+Supported LTO compression algorithms: zlib zstd
+gcc version 15.2.0 (Rev8, Built by MSYS2 project) 
+COLLECT_GCC_OPTIONS='-v' '-std=c++17' '-I' 'C:/Users/jose/Desktop/PROYECTOS 
+GIT/cusco-urban-transit/include' '-c' '-o' 'C:/Users/jose/Desktop/PROYECTOS 
+GIT/cusco-urban-transit/build_temp/temp_hello.obj' '-shared-libgcc' 
+'-mtune=generic' '-march=nocona' '-dumpdir' 'C:/Users/jose/Desktop/PROYECTOS 
+GIT/cusco-urban-transit/build_temp/'
+ C:/msys64/mingw64/bin/../lib/gcc/x86_64-w64-mingw32/15.2.0/cc1plus.exe -quiet -v 
+-I C:/Users/jose/Desktop/PROYECTOS GIT/cusco-urban-transit/include -iprefix 
+C:/msys64/mingw64/bin/../lib/gcc/x86_64-w64-mingw32/15.2.0/ -D_REENTRANT 
+C:/Users/jose/Desktop/PROYECTOS GIT/cusco-urban-transit/build_temp/temp_hello.cpp 
+-quiet -dumpdir C:/Users/jose/Desktop/PROYECTOS 
+GIT/cusco-urban-transit/build_temp/ -dumpbase temp_hello.cpp -dumpbase-ext .cpp 
+-mtune=generic -march=nocona -std=c++17 -version -o 
+C:\Users\jose\AppData\Local\Temp\ccS8jwhQ.s

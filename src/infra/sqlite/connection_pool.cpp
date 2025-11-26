@@ -11,41 +11,39 @@ ConnectionPool& ConnectionPool::get_instance() {
 
 void ConnectionPool::initialize(const std::string& db_path, size_t pool_size) {
     std::lock_guard<std::mutex> lock(mutex_);
-    
+
     if (initialized_) {
-        Logger::get_instance().warning("El pool de conexiones ya está inicializado");
+        Logger::get_instance().warning("Connection pool already initialized");
         return;
     }
-    
+
     db_path_ = db_path;
-    pool_size_ = pool_size;
-    
-    // Crear conexiones iniciales
+    pool_size_ = pool_size > 0 ? pool_size : pool_size_;
+
     for (size_t i = 0; i < pool_size_; ++i) {
         auto connection = std::make_shared<SQLiteWrapper>();
         if (connection->open(db_path_)) {
             connections_.push(connection);
         } else {
-            Logger::get_instance().error("Error al crear conexión en el pool");
+            Logger::get_instance().error("Failed to create connection in pool");
         }
     }
-    
+
     initialized_ = true;
-    Logger::get_instance().info("Pool de conexiones inicializado con " + 
-                               std::to_string(connections_.size()) + " conexiones");
+    Logger::get_instance().info("Connection pool initialized with " + std::to_string(connections_.size()) + " connections");
 }
 
 void ConnectionPool::shutdown() {
     std::lock_guard<std::mutex> lock(mutex_);
-    
+
     while (!connections_.empty()) {
         auto connection = connections_.front();
-        connection->close();
+        if (connection) connection->close();
         connections_.pop();
     }
-    
+
     initialized_ = false;
-    Logger::get_instance().info("Pool de conexiones cerrado");
+    Logger::get_instance().info("Connection pool shutdown");
 }
 
 ConnectionPool::~ConnectionPool() {
@@ -54,25 +52,24 @@ ConnectionPool::~ConnectionPool() {
 
 std::shared_ptr<SQLiteWrapper> ConnectionPool::get_connection() {
     std::unique_lock<std::mutex> lock(mutex_);
-    
+
     if (!initialized_) {
-        throw std::runtime_error("Pool de conexiones no inicializado");
+        throw std::runtime_error("Connection pool not initialized");
     }
-    
-    // Esperar hasta que haya una conexión disponible
+
     condition_.wait(lock, [this]() { return !connections_.empty(); });
-    
+
     auto connection = connections_.front();
     connections_.pop();
-    
+
     return connection;
 }
 
 void ConnectionPool::return_connection(std::shared_ptr<SQLiteWrapper> connection) {
     std::lock_guard<std::mutex> lock(mutex_);
-    
-    if (initialized_) {
-        connections_.push(connection);
-        condition_.notify_one();
-    }
+
+    if (!initialized_ || !connection) return;
+
+    connections_.push(std::move(connection));
+    condition_.notify_one();
 }

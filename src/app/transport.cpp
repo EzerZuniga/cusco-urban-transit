@@ -11,20 +11,19 @@ class TransportSystem::Impl {
 public:
     bool initialize(const std::string& db_path) {
         if (!db_.connect(db_path)) {
-            Logger::get_instance().error("Error al conectar con la base de datos");
+            Logger::get_instance().error("Failed to connect to database");
             return false;
         }
-        
-        // Inicializar grafo de transporte
+
         initialize_graph();
-        
-        Logger::get_instance().info("Sistema de transporte inicializado");
+
+        Logger::get_instance().info("Transport system initialized");
         return true;
     }
     
     void shutdown() {
         db_.disconnect();
-        Logger::get_instance().info("Sistema de transporte apagado");
+        Logger::get_instance().info("Transport system shutdown");
     }
     
     bool add_stop(const Stop& stop) {
@@ -39,7 +38,7 @@ public:
         bool result = db_.execute_with_params(sql, params);
         if (result) {
             graph_.add_node(stop.id);
-            Logger::get_instance().info("Parada agregada: " + stop.name);
+            Logger::get_instance().info("Stop added: " + stop.name);
         }
         return result;
     }
@@ -87,11 +86,8 @@ public:
         
         bool result = db_.execute_with_params(sql, params);
         if (result) {
-            // Agregar paradas a la ruta
-            for (int stop_id : route.stop_ids) {
-                add_stop_to_route(route.id, stop_id);
-            }
-            Logger::get_instance().info("Ruta agregada: " + route.name);
+            for (int stop_id : route.stop_ids) add_stop_to_route(route.id, stop_id);
+            Logger::get_instance().info("Route added: " + route.name);
         }
         return result;
     }
@@ -159,27 +155,23 @@ private:
     
     void initialize_graph() {
         auto stops = get_all_stops();
-        for (const auto& stop : stops) {
-            graph_.add_node(stop.id);
-        }
-        
-        // Conectar paradas basado en rutas
+        for (const auto& stop : stops) graph_.add_node(stop.id);
+
         auto routes = get_all_routes();
         for (const auto& route : routes) {
-            for (size_t i = 0; i < route.stop_ids.size() - 1; ++i) {
+            if (route.stop_ids.size() < 2) continue;
+            for (size_t i = 0; i + 1 < route.stop_ids.size(); ++i) {
                 int from = route.stop_ids[i];
                 int to = route.stop_ids[i + 1];
-                
-                // Calcular distancia como peso
+
                 auto stop1 = get_stop(from);
                 auto stop2 = get_stop(to);
                 double distance = TransportAlgorithms::calculate_distance(
                     stop1.latitude, stop1.longitude,
-                    stop2.latitude, stop2.longitude
-                );
-                
+                    stop2.latitude, stop2.longitude);
+
                 graph_.add_edge(from, to, distance);
-                graph_.add_edge(to, from, distance); // Bidireccional
+                graph_.add_edge(to, from, distance);
             }
         }
     }

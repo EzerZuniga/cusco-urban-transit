@@ -3,6 +3,7 @@
 #include <string>
 #include "transport/transport.h"
 #include "infra/logger.h"
+using namespace urban_transport;
 
 static int read_int(const std::string& prompt)
 {
@@ -27,7 +28,7 @@ void print_menu()
     std::cout << "Seleccione una opción: ";
 }
 
-void list_stops(urban_transport::TransportSystem& system)
+void list_stops(TransportSystem& system)
 {
     auto stops = system.get_all_stops();
     std::cout << "\n--- Paradas de Transporte ---\n";
@@ -39,7 +40,7 @@ void list_stops(urban_transport::TransportSystem& system)
     std::cout << "Total: " << stops.size() << " paradas\n";
 }
 
-void list_routes(urban_transport::TransportSystem& system)
+void list_routes(TransportSystem& system)
 {
     auto routes = system.get_all_routes();
     std::cout << "\n--- Rutas de Transporte ---\n";
@@ -52,7 +53,7 @@ void list_routes(urban_transport::TransportSystem& system)
     std::cout << "Total: " << routes.size() << " rutas\n";
 }
 
-void find_shortest_path(urban_transport::TransportSystem& system)
+void find_shortest_path(TransportSystem& system)
 {
     int start = read_int("ID de parada inicial: ");
     int end = read_int("ID de parada final: ");
@@ -71,7 +72,7 @@ void find_shortest_path(urban_transport::TransportSystem& system)
     }
 }
 
-void routes_through_stop(urban_transport::TransportSystem& system)
+void routes_through_stop(TransportSystem& system)
 {
     int stop_id = read_int("ID de parada: ");
 
@@ -85,10 +86,10 @@ void routes_through_stop(urban_transport::TransportSystem& system)
 
 int main()
 {
-    urban_transport::Logger::get_instance().initialize();
-    urban_transport::Logger::get_instance().info("Iniciando Sistema de Transporte Urbano");
+    Logger::get_instance().initialize();
+    Logger::get_instance().info("Iniciando Sistema de Transporte Urbano");
 
-    urban_transport::TransportSystem system;
+    TransportSystem system;
 
     if (!system.initialize("data/transport.db")) {
         std::cerr << "Error al inicializar el sistema de transporte\n";
@@ -131,8 +132,8 @@ int main()
     }
 
     system.shutdown();
-    urban_transport::Logger::get_instance().info("Sistema de Transporte Urbano finalizado");
-    urban_transport::Logger::get_instance().shutdown();
+    Logger::get_instance().info("Sistema de Transporte Urbano finalizado");
+    Logger::get_instance().shutdown();
 
     return 0;
 }
