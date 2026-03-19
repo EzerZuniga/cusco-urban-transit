@@ -1,51 +1,86 @@
 #!/usr/bin/env python3
-import sqlite3
-from pathlib import Path
-import sys
+"""Initialize SQLite database with schema and seed data.
 
-ROOT = Path(__file__).resolve().parents[1]
-DATA = ROOT / 'data'
-DB_PATH = DATA / 'transport.db'
-SCHEMA = DATA / 'schema.sql'
-SEED1 = DATA / 'seed' / 'stops_seed.sql'
-SEED2 = DATA / 'seed' / 'routes_seed.sql'
+Usage: ./scripts/init_db.py [--db PATH] [--schema PATH] [--seeds seed1 seed2 ...]
+"""
+
+import argparse
+import sqlite3
+import sys
+from pathlib import Path
+
+
+def parse_args():
+    p = argparse.ArgumentParser(description="Create/initialize transport SQLite DB")
+    root = Path(__file__).resolve().parents[1]
+    default_data = root / "data"
+    p.add_argument("--db", type=Path, default=default_data / "transport.db",
+                   help="Path to the SQLite database to create")
+    p.add_argument("--schema", type=Path, default=default_data / "schema.sql",
+                   help="Path to SQL schema file")
+    p.add_argument("--seeds", type=Path, nargs="*",
+                   default=[default_data / "seed" / "stops_seed.sql", default_data / "seed" / "routes_seed.sql"],
+                   help="Optional seed SQL files (applied in order)")
+    p.add_argument("--force", action="store_true", help="Remove existing DB if present")
+    return p.parse_args()
+
 
 def read_sql(path: Path) -> str:
     if not path.exists():
-        print(f"ERROR: missing {path}")
-        sys.exit(2)
-    return path.read_text(encoding='utf-8')
+        raise FileNotFoundError(str(path))
+    return path.read_text(encoding="utf-8")
+
 
 def main():
-    DATA.mkdir(parents=True, exist_ok=True)
-    if DB_PATH.exists():
-        try:
-            DB_PATH.unlink()
-        except Exception as e:
-            print(f"ERROR: cannot remove existing DB: {e}")
-            sys.exit(3)
+    args = parse_args()
+    db_path: Path = args.db
+    schema_path: Path = args.schema
+    seeds = args.seeds
 
-    schema_sql = read_sql(SCHEMA)
-    seed1_sql = read_sql(SEED1)
-    seed2_sql = read_sql(SEED2)
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+
+    if db_path.exists():
+        if args.force:
+            try:
+                db_path.unlink()
+            except Exception as e:
+                print(f"ERROR: cannot remove existing DB: {e}", file=sys.stderr)
+                return 3
+        else:
+            print(f"DB already exists: {db_path}. Use --force to recreate.")
+            return 0
 
     try:
-        conn = sqlite3.connect(str(DB_PATH))
-        cur = conn.cursor()
-        cur.executescript(schema_sql)
-        cur.executescript(seed1_sql)
-        cur.executescript(seed2_sql)
-        conn.commit()
-        conn.close()
-        print("DB_CREATED_PY: created", DB_PATH)
-    except Exception as e:
-        print("ERROR: failed to create DB:", e)
-        if DB_PATH.exists():
+        schema_sql = read_sql(schema_path)
+    except FileNotFoundError:
+        print(f"ERROR: schema file not found: {schema_path}", file=sys.stderr)
+        return 2
+
+    seed_sqls = []
+    for s in seeds:
+        try:
+            seed_sqls.append(read_sql(s))
+        except FileNotFoundError:
+            print(f"WARNING: seed file not found, skipping: {s}", file=sys.stderr)
+
+    try:
+        with sqlite3.connect(str(db_path)) as conn:
+            cur = conn.cursor()
+            cur.executescript(schema_sql)
+            for script in seed_sqls:
+                cur.executescript(script)
+            conn.commit()
+        print(f"DB created: {db_path}")
+        return 0
+    except sqlite3.Error as e:
+        print(f"ERROR: failed to create DB: {e}", file=sys.stderr)
+        if db_path.exists():
             try:
-                DB_PATH.unlink()
+                db_path.unlink()
             except Exception:
                 pass
-        sys.exit(4)
+        return 4
 
-if __name__ == '__main__':
-    main()
+
+if __name__ == "__main__":
+    raise SystemExit(main())

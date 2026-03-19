@@ -8,12 +8,14 @@ using namespace urban_transport;
 class TripService::Impl {
 public:
     bool initialize(const std::string& db_path) {
-        return db_.connect(db_path);
+        bool ok = db_.connect(db_path);
+        if (!ok) Logger::get_instance().error("TripService: failed to connect to DB: " + db_path);
+        return ok;
     }
 
     bool create_trip(const Trip& trip) {
-        std::string sql = "INSERT INTO trips (id, route_id, start_time, end_time) VALUES (?, ?, ?, ?)";
-        std::vector<std::string> params = {
+        const std::string sql = "INSERT INTO trips (id, route_id, start_time, end_time) VALUES (?, ?, ?, ?)";
+        const std::vector<std::string> params = {
             std::to_string(trip.id),
             std::to_string(trip.route_id),
             trip.start_time,
@@ -21,15 +23,13 @@ public:
         };
 
         bool result = db_.execute_with_params(sql, params);
-        if (result) {
-            Logger::get_instance().info("Trip created: id=" + std::to_string(trip.id));
-        }
+        if (result) Logger::get_instance().info("Trip created: id=" + std::to_string(trip.id));
         return result;
     }
 
     Trip get_trip(int id) const {
-        std::string sql = "SELECT id, route_id, start_time, end_time FROM trips WHERE id = ?";
-        std::vector<std::string> params = {std::to_string(id)};
+        const std::string sql = "SELECT id, route_id, start_time, end_time FROM trips WHERE id = ?";
+        const std::vector<std::string> params = {std::to_string(id)};
 
         Trip trip(0, 0, "", "");
         db_.query_with_params(sql, params, [&](const std::vector<std::string>& row) {
@@ -37,7 +37,7 @@ public:
             trip.route_id = std::stoi(row[1]);
             trip.start_time = row[2];
             trip.end_time = row[3];
-            return false; // detener después de la primera fila
+            return false;
         });
 
         trip.stop_sequence = get_trip_stops(id);
@@ -46,7 +46,7 @@ public:
 
     std::vector<Trip> get_all_trips() const {
         std::vector<Trip> trips;
-        std::string sql = "SELECT id, route_id, start_time, end_time FROM trips ORDER BY id";
+        const std::string sql = "SELECT id, route_id, start_time, end_time FROM trips ORDER BY id";
 
         db_.query(sql, [&](const std::vector<std::string>& row) {
             Trip trip(std::stoi(row[0]), std::stoi(row[1]), row[2], row[3]);
@@ -59,8 +59,8 @@ public:
     }
 
     bool update_trip(const Trip& trip) {
-        std::string sql = "UPDATE trips SET route_id = ?, start_time = ?, end_time = ? WHERE id = ?";
-        std::vector<std::string> params = {
+        const std::string sql = "UPDATE trips SET route_id = ?, start_time = ?, end_time = ? WHERE id = ?";
+        const std::vector<std::string> params = {
             std::to_string(trip.route_id),
             trip.start_time,
             trip.end_time,
@@ -71,20 +71,19 @@ public:
     }
 
     bool delete_trip(int id) {
-        // eliminar relaciones con paradas
-        std::string sql1 = "DELETE FROM trip_stops WHERE trip_id = ?";
-        std::vector<std::string> params1 = {std::to_string(id)};
+        const std::string sql1 = "DELETE FROM trip_stops WHERE trip_id = ?";
+        const std::vector<std::string> params1 = {std::to_string(id)};
         db_.execute_with_params(sql1, params1);
 
-        std::string sql2 = "DELETE FROM trips WHERE id = ?";
-        std::vector<std::string> params2 = {std::to_string(id)};
+        const std::string sql2 = "DELETE FROM trips WHERE id = ?";
+        const std::vector<std::string> params2 = {std::to_string(id)};
         return db_.execute_with_params(sql2, params2);
     }
 
     std::vector<Trip> find_trips_by_route(int route_id) const {
         std::vector<Trip> trips;
-        std::string sql = "SELECT id, route_id, start_time, end_time FROM trips WHERE route_id = ? ORDER BY id";
-        std::vector<std::string> params = {std::to_string(route_id)};
+        const std::string sql = "SELECT id, route_id, start_time, end_time FROM trips WHERE route_id = ? ORDER BY id";
+        const std::vector<std::string> params = {std::to_string(route_id)};
 
         db_.query_with_params(sql, params, [&](const std::vector<std::string>& row) {
             Trip trip(std::stoi(row[0]), std::stoi(row[1]), row[2], row[3]);
@@ -98,8 +97,8 @@ public:
 
     std::vector<Trip> find_trips_by_time_range(const std::string& start_time, const std::string& end_time) const {
         std::vector<Trip> trips;
-        std::string sql = "SELECT id, route_id, start_time, end_time FROM trips WHERE start_time >= ? AND end_time <= ? ORDER BY start_time";
-        std::vector<std::string> params = {start_time, end_time};
+        const std::string sql = "SELECT id, route_id, start_time, end_time FROM trips WHERE start_time >= ? AND end_time <= ? ORDER BY start_time";
+        const std::vector<std::string> params = {start_time, end_time};
 
         db_.query_with_params(sql, params, [&](const std::vector<std::string>& row) {
             Trip trip(std::stoi(row[0]), std::stoi(row[1]), row[2], row[3]);
@@ -112,17 +111,16 @@ public:
     }
 
     bool add_stop_to_trip(int trip_id, int stop_id, int sequence) {
-        // if sequence <= 0, append to end
         if (sequence <= 0) {
             auto stops = get_trip_stops(trip_id);
             sequence = static_cast<int>(stops.size()) + 1;
         }
 
-        std::string sql = "INSERT INTO trip_stops (trip_id, stop_id, arrival_time, sequence) VALUES (?, ?, ?, ?)";
-        std::vector<std::string> params = {
+        const std::string sql = "INSERT INTO trip_stops (trip_id, stop_id, arrival_time, sequence) VALUES (?, ?, ?, ?)";
+        const std::vector<std::string> params = {
             std::to_string(trip_id),
             std::to_string(stop_id),
-            std::string(""), // arrival_time unknown
+            std::string(""),
             std::to_string(sequence)
         };
 
@@ -131,8 +129,8 @@ public:
 
     std::vector<int> get_trip_stops(int trip_id) const {
         std::vector<int> stops;
-        std::string sql = "SELECT stop_id FROM trip_stops WHERE trip_id = ? ORDER BY sequence";
-        std::vector<std::string> params = {std::to_string(trip_id)};
+        const std::string sql = "SELECT stop_id FROM trip_stops WHERE trip_id = ? ORDER BY sequence";
+        const std::vector<std::string> params = {std::to_string(trip_id)};
 
         db_.query_with_params(sql, params, [&](const std::vector<std::string>& row) {
             stops.push_back(std::stoi(row[0]));
@@ -146,7 +144,6 @@ private:
     Database db_;
 };
 
-// Implementación de TripService
 TripService::TripService() : pimpl(std::make_unique<Impl>()) {}
 TripService::~TripService() = default;
 
