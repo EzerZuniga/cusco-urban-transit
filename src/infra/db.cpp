@@ -1,5 +1,10 @@
 #include "infra/db.h"
+#include "infra/db_wrapper.h"
+#if defined(USE_POSTGRES)
+#include "infra/postgres_wrapper.h"
+#else
 #include "infra/sqlite_wrapper.h"
+#endif
 #include "infra/logger.h"
 #include <memory>
 
@@ -7,57 +12,101 @@ using namespace urban_transport;
 
 class Database::Impl {
 public:
-    bool connect(const std::string& db_path) {
-        return sqlite_.open(db_path);
+    Impl() = default;
+
+    bool connect(const std::string& conn) {
+        if (db_ && db_->is_open()) {
+            db_->close();
+        }
+
+#if defined(USE_POSTGRES)
+        db_ = std::make_unique<PostgresWrapper>();
+#else
+        db_ = std::make_unique<SQLiteWrapper>();
+#endif
+        if (!db_) return false;
+        Logger::get_instance().debug(std::string("Connecting to DB: ") + conn);
+        return db_->open(conn);
     }
     
     void disconnect() {
-        sqlite_.close();
+        if (db_) {
+            db_->close();
+            db_.reset();
+        }
     }
     
     bool is_connected() const {
-        return sqlite_.is_open();
+        return db_ && db_->is_open();
     }
     
     bool execute(const std::string& sql) {
+        if (!db_) {
+            Logger::get_instance().error("Database wrapper is not initialized");
+            return false;
+        }
         Logger::get_instance().debug("Ejecutando SQL: " + sql);
-        return sqlite_.execute(sql);
+        return db_->execute(sql);
     }
     
     bool execute_with_params(const std::string& sql, const std::vector<std::string>& params) {
+        if (!db_) {
+            Logger::get_instance().error("Database wrapper is not initialized");
+            return false;
+        }
         Logger::get_instance().debug("Ejecutando SQL con parámetros: " + sql);
-        return sqlite_.execute_with_params(sql, params);
+        return db_->execute_with_params(sql, params);
     }
     
     bool query(const std::string& sql, RowCallback callback) const {
+        if (!db_) {
+            Logger::get_instance().error("Database wrapper is not initialized");
+            return false;
+        }
         Logger::get_instance().debug("Consultando SQL: " + sql);
-        return sqlite_.query(sql, callback);
+        return db_->query(sql, callback);
     }
     
     bool query_with_params(const std::string& sql, 
                           const std::vector<std::string>& params,
                           RowCallback callback) const {
+        if (!db_) {
+            Logger::get_instance().error("Database wrapper is not initialized");
+            return false;
+        }
         Logger::get_instance().debug("Consultando SQL con parámetros: " + sql);
-        return sqlite_.query_with_params(sql, params, callback);
+        return db_->query_with_params(sql, params, callback);
     }
     
     bool begin_transaction() {
+        if (!db_) {
+            Logger::get_instance().error("Database wrapper is not initialized");
+            return false;
+        }
         Logger::get_instance().debug("Iniciando transacción");
-        return sqlite_.begin_transaction();
+        return db_->begin_transaction();
     }
     
     bool commit_transaction() {
+        if (!db_) {
+            Logger::get_instance().error("Database wrapper is not initialized");
+            return false;
+        }
         Logger::get_instance().debug("Confirmando transacción");
-        return sqlite_.commit_transaction();
+        return db_->commit_transaction();
     }
     
     bool rollback_transaction() {
+        if (!db_) {
+            Logger::get_instance().error("Database wrapper is not initialized");
+            return false;
+        }
         Logger::get_instance().debug("Revirtiendo transacción");
-        return sqlite_.rollback_transaction();
+        return db_->rollback_transaction();
     }
 
 private:
-    SQLiteWrapper sqlite_;
+    std::unique_ptr<DBWrapper> db_;
 };
 
 // Implementación de Database

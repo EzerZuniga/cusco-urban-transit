@@ -14,7 +14,7 @@ public:
     }
 
     bool create_route(const Route& route) {
-        const std::string sql = "INSERT INTO routes (id, name, transport_type) VALUES (?, ?, ?)";
+        const std::string sql = "INSERT OR REPLACE INTO routes (id, name, transport_type) VALUES (?, ?, ?)";
         const std::vector<std::string> params = {
             std::to_string(route.id),
             route.name,

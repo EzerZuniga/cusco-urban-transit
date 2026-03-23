@@ -1,10 +1,33 @@
 #include "infra/sqlite_wrapper.h"
 #include "infra/logger.h"
+#include <limits>
 
 using namespace urban_transport;
 
 static std::string safe_sqlite_errmsg(sqlite3* db) {
     return db ? sqlite3_errmsg(db) : std::string("Database not open");
+}
+
+static bool bind_text_param(sqlite3* db, sqlite3_stmt* stmt, int param_index, const std::string& value) {
+    if (value.size() > static_cast<size_t>(std::numeric_limits<int>::max())) {
+        Logger::get_instance().error("Parámetro demasiado grande para SQLite en índice " + std::to_string(param_index));
+        return false;
+    }
+
+    const int rc = sqlite3_bind_text(
+        stmt,
+        param_index,
+        value.c_str(),
+        static_cast<int>(value.size()),
+        SQLITE_TRANSIENT
+    );
+
+    if (rc != SQLITE_OK) {
+        Logger::get_instance().error("Error al vincular parámetro en índice " + std::to_string(param_index) + ": " + safe_sqlite_errmsg(db));
+        return false;
+    }
+
+    return true;
 }
 
 SQLiteWrapper::SQLiteWrapper() : db_(nullptr) {}
@@ -74,7 +97,17 @@ bool SQLiteWrapper::execute_with_params(const std::string& sql, const std::vecto
     
     // Vincular parámetros
     for (size_t i = 0; i < params.size(); ++i) {
-        sqlite3_bind_text(stmt, i + 1, params[i].c_str(), -1, SQLITE_TRANSIENT);
+        if (i >= static_cast<size_t>(std::numeric_limits<int>::max())) {
+            Logger::get_instance().error("Demasiados parámetros para SQLite");
+            sqlite3_finalize(stmt);
+            return false;
+        }
+
+        const int param_index = static_cast<int>(i) + 1;
+        if (!bind_text_param(db_, stmt, param_index, params[i])) {
+            sqlite3_finalize(stmt);
+            return false;
+        }
     }
     
     rc = sqlite3_step(stmt);
@@ -142,7 +175,17 @@ bool SQLiteWrapper::query_with_params(const std::string& sql,
     
     // Vincular parámetros
     for (size_t i = 0; i < params.size(); ++i) {
-        sqlite3_bind_text(stmt, i + 1, params[i].c_str(), -1, SQLITE_TRANSIENT);
+        if (i >= static_cast<size_t>(std::numeric_limits<int>::max())) {
+            Logger::get_instance().error("Demasiados parámetros para SQLite");
+            sqlite3_finalize(stmt);
+            return false;
+        }
+
+        const int param_index = static_cast<int>(i) + 1;
+        if (!bind_text_param(db_, stmt, param_index, params[i])) {
+            sqlite3_finalize(stmt);
+            return false;
+        }
     }
     
     bool success = true;

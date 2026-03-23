@@ -91,7 +91,33 @@ int main()
 
     TransportSystem system;
 
-    if (!system.initialize("data/transport.db")) {
+    // Prefer environment-provided connection string for Postgres, otherwise use local sqlite file
+    auto get_env = [](const char* name)->const char* {
+#if defined(_MSC_VER)
+        static std::string storage;
+        char* buf = nullptr;
+        size_t len = 0;
+        if (_dupenv_s(&buf, &len, name) == 0 && buf && *buf) {
+            storage.assign(buf);
+            free(buf);
+            return storage.c_str();
+        }
+        if (buf) { free(buf); }
+        return nullptr;
+#else
+        return std::getenv(name);
+#endif
+    };
+    const char* pg_conn_env = get_env("PG_CONN");
+    const char* db_url_env = get_env("DATABASE_URL");
+    std::string conn = "data/transport.db";
+    if (pg_conn_env && *pg_conn_env) {
+        conn = pg_conn_env;
+    } else if (db_url_env && *db_url_env) {
+        conn = db_url_env;
+    }
+
+    if (!system.initialize(conn)) {
         std::cerr << "Error al inicializar el sistema de transporte\n";
         return 1;
     }

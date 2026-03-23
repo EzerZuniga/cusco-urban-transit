@@ -1,41 +1,92 @@
-
-# Build artifacts
+# -----------------------------
+# Build system (CMake / CTest)
+# -----------------------------
 /build/
+/build.*/
+/build.reorg/
+/build.reorg-tests/
 /cmake-build-*/
-
-# CMake generated files
 /CMakeFiles/
 /CMakeCache.txt
 /cmake_install.cmake
 /compile_commands.json
+/CTestTestfile.cmake
+/Testing/
+/DartConfiguration.tcl
+/install_manifest.txt
+/_deps/
 
-# Binaries
+# -----------------------------
+# Binaries and intermediate files
+# -----------------------------
 /bin/
 /lib/
+*.exe
+*.dll
+*.so
+*.dylib
+*.a
+*.lib
+*.out
+*.o
+*.obj
+*.pdb
+*.ilk
+*.idb
+*.exp
 
-# Editor directories and files
+# -----------------------------
+# IDE / Editor
+# -----------------------------
 /.vscode/
-/.vscode/*
 /.idea/
+/.vs/
+*.suo
+*.user
+*.userosscache
+*.VC.db
+*.VC.opendb
+*.opendb
 
-# OS generated files
+# -----------------------------
+# OS files
+# -----------------------------
 Thumbs.db
 .DS_Store
+Desktop.ini
 
-# Logs
+# -----------------------------
+# Logs / temp
+# -----------------------------
 *.log
-
-# Python envs
-venv/
-.env/
-
-# SQLite database (local development copy)
-/data/transport.db
-
-# Temporary files
+*.log.*
 *.tmp
+*.temp
 *.swp
 *~
+/build_temp/
+/build_log.txt
 
-# Tests output
-/build/test/
+# -----------------------------
+# Python virtual environments
+# -----------------------------
+.env/
+venv/
+.venv/
+
+# -----------------------------
+# Local databases and test data
+# -----------------------------
+/data/*.db
+/data/*.db-wal
+/data/*.db-shm
+/test_*.db
+*.db-journal
+
+# -----------------------------
+# Local dependency/tool downloads
+# -----------------------------
+/tools/vcpkg/
+/tools/mingw/*.zip
+/third_party/sqlite/sqlite-amalgamation-*/
+/third_party/sqlite/*.zip

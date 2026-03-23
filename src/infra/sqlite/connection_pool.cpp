@@ -1,5 +1,10 @@
 #include "infra/connection_pool.h"
 #include "infra/logger.h"
+#if defined(USE_POSTGRES)
+#include "infra/postgres_wrapper.h"
+#else
+#include "infra/sqlite_wrapper.h"
+#endif
 #include <stdexcept>
 
 using namespace urban_transport;
@@ -21,7 +26,11 @@ void ConnectionPool::initialize(const std::string& db_path, size_t pool_size) {
     pool_size_ = pool_size > 0 ? pool_size : pool_size_;
 
     for (size_t i = 0; i < pool_size_; ++i) {
+#if defined(USE_POSTGRES)
+        auto connection = std::make_shared<PostgresWrapper>();
+#else
         auto connection = std::make_shared<SQLiteWrapper>();
+#endif
         if (connection->open(db_path_)) {
             connections_.push(connection);
         } else {
@@ -50,7 +59,7 @@ ConnectionPool::~ConnectionPool() {
     shutdown();
 }
 
-std::shared_ptr<SQLiteWrapper> ConnectionPool::get_connection() {
+std::shared_ptr<DBWrapper> ConnectionPool::get_connection() {
     std::unique_lock<std::mutex> lock(mutex_);
 
     if (!initialized_) {
@@ -65,7 +74,7 @@ std::shared_ptr<SQLiteWrapper> ConnectionPool::get_connection() {
     return connection;
 }
 
-void ConnectionPool::return_connection(std::shared_ptr<SQLiteWrapper> connection) {
+void ConnectionPool::return_connection(std::shared_ptr<DBWrapper> connection) {
     std::lock_guard<std::mutex> lock(mutex_);
 
     if (!initialized_ || !connection) return;

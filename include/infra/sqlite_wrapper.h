@@ -1,15 +1,22 @@
 #ifndef SQLITE_WRAPPER_H
 #define SQLITE_WRAPPER_H
 
-#include <sqlite3.h>
+#include "infra/db_wrapper.h"
 #include <string>
 #include <vector>
 #include <memory>
-#include <functional>
 
 namespace urban_transport {
 
-class SQLiteWrapper {
+#ifndef USE_POSTGRES
+#include <sqlite3.h>
+
+class SQLiteWrapper : public DBWrapper {
+#else
+// When building with USE_POSTGRES the SQLite implementation is not used.
+// Provide a lightweight stub so headers can be included without requiring sqlite3 headers.
+class SQLiteWrapper : public DBWrapper {
+#endif
 public:
     SQLiteWrapper();
     ~SQLiteWrapper();
@@ -23,25 +30,28 @@ public:
     bool execute_with_params(const std::string& sql, 
                            const std::vector<std::string>& params);
     
-    using RowCallback = std::function<bool(const std::vector<std::string>&)>;
-    bool query(const std::string& sql, RowCallback callback) const;
+    bool query(const std::string& sql, RowCallback callback) const override;
     bool query_with_params(const std::string& sql, 
                          const std::vector<std::string>& params,
-                         RowCallback callback) const;
+                         RowCallback callback) const override;
     
     // Transacciones
-    bool begin_transaction();
-    bool commit_transaction();
-    bool rollback_transaction();
+    bool begin_transaction() override;
+    bool commit_transaction() override;
+    bool rollback_transaction() override;
     
     // Último error
-    std::string last_error() const;
-    int last_error_code() const;
+    std::string last_error() const override;
+    int last_error_code() const override;
 
 private:
+#ifndef USE_POSTGRES
     sqlite3* db_ = nullptr;
-    
     void cleanup();
+#else
+    // stub state
+    void cleanup() {}
+#endif
 };
 
 } // namespace urban_transport

@@ -1,8 +1,13 @@
 #include <gtest/gtest.h>
 #include <cstdio>
+#include <filesystem>
 #include "transport/route_service.h"
 #include "infra/db.h"
 #include "infra/logger.h"
+
+#ifndef UT_TEST_DB_DIR
+#define UT_TEST_DB_DIR "."
+#endif
 
 using namespace urban_transport;
 
@@ -10,7 +15,9 @@ class RouteServiceTest : public ::testing::Test {
 protected:
     void SetUp() override {
         Logger::get_instance().initialize();
-        db_path = "test_routes.db";
+        const std::filesystem::path runtime_dir(UT_TEST_DB_DIR);
+        std::filesystem::create_directories(runtime_dir);
+        db_path = (runtime_dir / "test_routes.db").string();
         service.initialize(db_path);
         create_test_schema();
     }
@@ -21,6 +28,8 @@ protected:
     }
 
     void create_test_schema() {
+        // Ensure a clean database file for the test
+        std::remove(db_path.c_str());
         std::string sql = R"(
 CREATE TABLE IF NOT EXISTS stops (
     id INTEGER PRIMARY KEY,

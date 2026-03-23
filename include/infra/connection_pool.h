@@ -1,7 +1,7 @@
 #ifndef CONNECTION_POOL_H
 #define CONNECTION_POOL_H
 
-#include "sqlite_wrapper.h"
+#include "db_wrapper.h"
 #include <memory>
 #include <queue>
 #include <mutex>
@@ -16,8 +16,8 @@ public:
     void initialize(const std::string& db_path, size_t pool_size = 5);
     void shutdown();
     
-    std::shared_ptr<SQLiteWrapper> get_connection();
-    void return_connection(std::shared_ptr<SQLiteWrapper> connection);
+    std::shared_ptr<DBWrapper> get_connection();
+    void return_connection(std::shared_ptr<DBWrapper> connection);
 
 private:
     ConnectionPool() = default;
@@ -25,7 +25,7 @@ private:
     
     std::string db_path_;
     size_t pool_size_ = 5;
-    std::queue<std::shared_ptr<SQLiteWrapper>> connections_;
+    std::queue<std::shared_ptr<DBWrapper>> connections_;
     std::mutex mutex_;
     std::condition_variable condition_;
     bool initialized_ = false;

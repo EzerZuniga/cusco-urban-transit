@@ -238,11 +238,13 @@ std::vector<Route> TransportSystem::get_all_routes() const {
 }
 
 bool TransportSystem::add_trip(const Trip& trip) {
+    (void)trip;
     // Implementación básica - se puede expandir
     return true;
 }
 
 Trip TransportSystem::get_trip(int id) const {
+    (void)id;
     return Trip(0, 0, "", "");
 }
 

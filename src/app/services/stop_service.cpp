@@ -16,7 +16,7 @@ public:
     }
 
     bool create_stop(const Stop& stop) {
-        const std::string sql = "INSERT INTO stops (id, name, latitude, longitude) VALUES (?, ?, ?, ?)";
+        const std::string sql = "INSERT OR REPLACE INTO stops (id, name, latitude, longitude) VALUES (?, ?, ?, ?)";
         const std::vector<std::string> params = {
             std::to_string(stop.id),
             stop.name,

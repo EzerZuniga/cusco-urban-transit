@@ -20,13 +20,13 @@ void Logger::initialize(const std::string& filename) {
         if (log_file_.is_open()) use_file_ = true;
     }
     initialized_ = true;
-    log(LogLevel::INFO, "Logger initialized");
+    write_log("Logger initialized");
 }
 
 void Logger::shutdown() {
     std::lock_guard<std::mutex> lock(log_mutex_);
     if (!initialized_) return;
-    log(LogLevel::INFO, "Logger shutdown");
+    write_log("Logger shutdown");
     if (log_file_.is_open()) log_file_.close();
     initialized_ = false;
     use_file_ = false;
@@ -44,8 +44,15 @@ void Logger::log(LogLevel level, const std::string& message) {
     std::time_t now_time = std::chrono::system_clock::to_time_t(now);
     auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000;
 
+    std::tm tm_buf;
+#if defined(_MSC_VER)
+    localtime_s(&tm_buf, &now_time);
+#else
+    localtime_r(&now_time, &tm_buf);
+#endif
+
     std::stringstream ss;
-    ss << std::put_time(std::localtime(&now_time), "%Y-%m-%d %H:%M:%S");
+    ss << std::put_time(&tm_buf, "%Y-%m-%d %H:%M:%S");
     ss << "." << std::setfill('0') << std::setw(3) << ms.count();
 
     std::string level_str = level_to_string(level);
